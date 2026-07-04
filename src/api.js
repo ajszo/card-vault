@@ -1,10 +1,15 @@
 // Talks to the /api/identify-card serverless function, which holds the
 // Anthropic API key server-side and never exposes it to the browser.
-export async function identifyCard(imageBase64, mediaType) {
+export async function identifyCard(imageBase64, mediaType, backImageBase64, backMediaType) {
   const res = await fetch('/api/identify-card', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ image: imageBase64, mediaType })
+    body: JSON.stringify({
+      image: imageBase64,
+      mediaType,
+      backImage: backImageBase64 || undefined,
+      backMediaType: backImageBase64 ? backMediaType : undefined
+    })
   });
 
   if (!res.ok) {

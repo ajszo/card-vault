@@ -12,7 +12,11 @@ const BLANK_FORM = {
 
 export default function CardCapture({ onSave }) {
   const fileInputRef = useRef(null);
+  const backInputRef = useRef(null);
   const [imageDataUrl, setImageDataUrl] = useState(null);
+  const [rawFront, setRawFront] = useState(null);
+  const [backImageDataUrl, setBackImageDataUrl] = useState(null);
+  const [rawBack, setRawBack] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [form, setForm] = useState(BLANK_FORM);
@@ -24,9 +28,25 @@ export default function CardCapture({ onSave }) {
     setError(null);
     setIdentified(false);
     const raw = await fileToBase64(file);
+    setRawFront(raw);
     const resized = await resizeImage(raw);
     setImageDataUrl(resized);
     setForm(BLANK_FORM);
+  }
+
+  async function handleBackFile(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const raw = await fileToBase64(file);
+    setRawBack(raw);
+    const resized = await resizeImage(raw);
+    setBackImageDataUrl(resized);
+  }
+
+  function removeBack() {
+    setRawBack(null);
+    setBackImageDataUrl(null);
+    if (backInputRef.current) backInputRef.current.value = '';
   }
 
   async function handleIdentify() {
@@ -34,9 +54,20 @@ export default function CardCapture({ onSave }) {
     setLoading(true);
     setError(null);
     try {
-      const mediaType = imageDataUrl.match(/data:(.*);base64/)?.[1] || 'image/jpeg';
-      const base64 = imageDataUrl.split(',')[1];
-      const result = await identifyCard(base64, mediaType);
+      // Send a higher-res encode than what's stored/displayed, so the model
+      // can read fine print (card numbers, serials, foil patterns).
+      const frontForId = await resizeImage(rawFront, 1600, 0.92);
+      const mediaType = frontForId.match(/data:(.*);base64/)?.[1] || 'image/jpeg';
+      const base64 = frontForId.split(',')[1];
+
+      let backBase64, backMediaType;
+      if (rawBack) {
+        const backForId = await resizeImage(rawBack, 1600, 0.92);
+        backMediaType = backForId.match(/data:(.*);base64/)?.[1] || 'image/jpeg';
+        backBase64 = backForId.split(',')[1];
+      }
+
+      const result = await identifyCard(base64, mediaType, backBase64, backMediaType);
       setForm((f) => ({
         ...f,
         player: result.player || '',
@@ -66,10 +97,14 @@ export default function CardCapture({ onSave }) {
 
   function reset() {
     setImageDataUrl(null);
+    setRawFront(null);
+    setBackImageDataUrl(null);
+    setRawBack(null);
     setForm(BLANK_FORM);
     setIdentified(false);
     setError(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
+    if (backInputRef.current) backInputRef.current.value = '';
   }
 
   async function handleSave() {
@@ -80,6 +115,7 @@ export default function CardCapture({ onSave }) {
     const card = {
       id: newId(),
       imageDataUrl,
+      backImageDataUrl: backImageDataUrl || null,
       player: form.player,
       year: form.year,
       set: form.set,
@@ -114,7 +150,7 @@ export default function CardCapture({ onSave }) {
           onClick={() => fileInputRef.current?.click()}
         >
           Tap to take a photo or choose one from your library.
-          <br />Front of the card works best — back if the grade label is there.
+          <br />Start with the front — you can add a back photo next for better accuracy.
         </div>
       )}
 
@@ -134,9 +170,39 @@ export default function CardCapture({ onSave }) {
       )}
 
       {imageDataUrl && !identified && (
-        <button className="btn btn-brass" onClick={handleIdentify} disabled={loading} style={{ marginBottom: 10 }}>
-          {loading ? 'Reading the card…' : 'Identify card & get value'}
-        </button>
+        <>
+          <input
+            ref={backInputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            style={{ display: 'none' }}
+            onChange={handleBackFile}
+          />
+
+          {!backImageDataUrl && (
+            <button
+              className="btn btn-ghost"
+              onClick={() => backInputRef.current?.click()}
+              style={{ marginBottom: 10 }}
+            >
+              + Add back of card (optional, improves accuracy)
+            </button>
+          )}
+
+          {backImageDataUrl && (
+            <div style={{ marginBottom: 10 }}>
+              <div className="capture-preview">
+                <img src={backImageDataUrl} alt="Captured card back" />
+              </div>
+              <button className="btn btn-ghost" onClick={removeBack}>Remove back photo</button>
+            </div>
+          )}
+
+          <button className="btn btn-brass" onClick={handleIdentify} disabled={loading} style={{ marginBottom: 10 }}>
+            {loading ? 'Reading the card…' : 'Identify card & get value'}
+          </button>
+        </>
       )}
 
       {imageDataUrl && (

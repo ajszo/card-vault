@@ -33,8 +33,9 @@ export default function CardDetail({ card, onClose, onSave, onDelete }) {
     <div className="sheet-backdrop" onClick={onClose}>
       <div className="sheet" onClick={(e) => e.stopPropagation()}>
         {card.imageDataUrl && (
-          <div className="capture-preview" style={{ marginBottom: 14 }}>
-            <img src={card.imageDataUrl} alt={card.player} />
+          <div className="capture-preview" style={{ marginBottom: card.backImageDataUrl ? 8 : 14, display: 'flex', gap: 8 }}>
+            <img src={card.imageDataUrl} alt={card.player} style={{ flex: 1 }} />
+            {card.backImageDataUrl && <img src={card.backImageDataUrl} alt={`${card.player} back`} style={{ flex: 1 }} />}
           </div>
         )}
         <h2>{card.player}</h2>

@@ -4,7 +4,14 @@
 export const config = { runtime: 'nodejs' };
 
 const SYSTEM_PROMPT = `You are a sports card identification and pricing assistant.
-You will be shown a photo of a single sports trading card (front or back).
+You will be shown one or two photos of a single sports trading card (front,
+and optionally back). Look closely at small print - set logos, copyright
+lines, card number, serial numbering (e.g. "12/99"), and foil/parallel
+patterns - since these are usually what distinguishes the exact card and
+parallel from similar-looking ones. If a back photo is included, use it to
+confirm the set/manufacturer and card number, since those are often clearer
+on the back than the front.
+
 Identify it as precisely as you can, then search the web for recent comparable
 sales (eBay sold listings, PWCC, Goldin, 130point, etc.) to estimate current
 market value for that exact card, parallel/serial number, and grade if visible.
@@ -34,7 +41,7 @@ export default async function handler(req, res) {
     return;
   }
 
-  const { image, mediaType } = req.body || {};
+  const { image, mediaType, backImage, backMediaType } = req.body || {};
   if (!image) {
     res.status(400).json({ error: 'Missing image' });
     return;
@@ -46,6 +53,25 @@ export default async function handler(req, res) {
     return;
   }
 
+  const content = [
+    {
+      type: 'image',
+      source: { type: 'base64', media_type: mediaType || 'image/jpeg', data: image }
+    }
+  ];
+  if (backImage) {
+    content.push({
+      type: 'image',
+      source: { type: 'base64', media_type: backMediaType || 'image/jpeg', data: backImage }
+    });
+  }
+  content.push({
+    type: 'text',
+    text: backImage
+      ? 'First image is the front, second is the back. Identify this card and estimate its current market value.'
+      : 'Identify this card and estimate its current market value.'
+  });
+
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -55,20 +81,14 @@ export default async function handler(req, res) {
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-5',
+        model: 'claude-opus-4-8',
         max_tokens: 1200,
         system: SYSTEM_PROMPT,
         tools: [{ type: 'web_search_20250305', name: 'web_search' }],
         messages: [
           {
             role: 'user',
-            content: [
-              {
-                type: 'image',
-                source: { type: 'base64', media_type: mediaType || 'image/jpeg', data: image }
-              },
-              { type: 'text', text: 'Identify this card and estimate its current market value.' }
-            ]
+            content
           }
         ]
       })

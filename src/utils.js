@@ -31,8 +31,10 @@ export function fileToBase64(file) {
   });
 }
 
-// Downscale a captured photo before sending it anywhere or storing it,
-// so the app stays fast and storage stays small.
+// Downscale a captured photo before storing it, so the app stays fast and
+// IndexedDB storage stays small. A separate, higher-res pass (see below) is
+// used just for the identify API call, since fine print (card numbers,
+// serials, foil parallels) needs more detail than the stored thumbnail.
 export function resizeImage(dataUrl, maxDim = 900, quality = 0.82) {
   return new Promise((resolve) => {
     const img = new Image();

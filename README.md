@@ -65,6 +65,9 @@ the `/api` function. Alternatively install the Vercel CLI and run
 
 - Grading and serial numbers are only readable if they're visible/legible
   in the photo — encourage good lighting and a straight-on shot.
+- Adding a back-of-card photo (optional button after the front capture)
+  noticeably improves accuracy, since the set name, card number, and
+  copyright line are often clearer on the back than the front.
 - Estimated values are a starting point from recent comps, not an
   appraisal — good for tracking trends, not for insurance or tax purposes.
 - Each identify call costs a small amount of Anthropic API usage (a few
