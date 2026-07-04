@@ -26,7 +26,7 @@ export default function Login({ onAuthed }) {
     <div className="app">
       <header className="app-header">
         <span className="eyebrow">{mode === 'login' ? 'Sign in' : 'Create a profile'}</span>
-        <h1>Dad's Card Vault</h1>
+        <h1>Card Vault</h1>
       </header>
 
       <form onSubmit={submit} style={{ padding: '0 16px' }}>

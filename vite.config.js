@@ -9,7 +9,7 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['icons/icon-192.png', 'icons/icon-512.png'],
       manifest: {
-        name: "Dad's Card Vault",
+        name: 'Card Vault',
         short_name: 'Card Vault',
         description: 'Snap a card, know what it\'s worth, track every buy and sell.',
         theme_color: '#1B2420',

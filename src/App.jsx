@@ -64,9 +64,8 @@ export default function App() {
     <div className="app">
       <header className="app-header">
         <span className="eyebrow">Est. this season</span>
-        <h1>Dad's Card Vault</h1>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 6 }}>
-          <span style={{ fontSize: 12, color: 'var(--ink-dim)' }}>Signed in as {user.username}</span>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <h1>{user.username}'s Card Vault</h1>
           <button
             className="btn btn-ghost"
             style={{ padding: '3px 10px', fontSize: 12 }}

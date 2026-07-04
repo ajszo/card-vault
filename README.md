@@ -1,8 +1,10 @@
-# Dad's Card Vault
+# Card Vault
 
 A mobile-installable PWA for tracking a sports card collection: snap a photo,
 get an AI-identified card + estimated market value, and keep a running
-buy/sell ledger — all working offline once installed.
+buy/sell ledger — all working offline once installed. Each person signs up
+with their own username + passcode, and sees their own vault (e.g. "arieszo's
+Card Vault").
 
 ## What it does
 
@@ -19,13 +21,13 @@ buy/sell ledger — all working offline once installed.
 
 ## Why there's no live eBay account connection
 
-A real eBay sync (auto-importing his listings/sold prices) requires eBay's
+A real eBay sync (auto-importing your listings/sold prices) requires eBay's
 OAuth developer API, which needs a registered developer app (approval can
-take a while) and a backend to securely hold his access tokens — not
-something safe to do from code running in a browser. This app instead
-estimates value via web search on each card, and gives him a spot to log
-what he actually paid/sold for, on eBay or anywhere else. If you want true
-eBay sync down the road, that's a follow-on project, not a small addition.
+take a while) and a backend to securely hold access tokens — not something
+safe to do from code running in a browser. This app instead estimates value
+via web search on each card, and gives you a spot to log what you actually
+paid/sold for, on eBay or anywhere else. If you want true eBay sync down the
+road, that's a follow-on project, not a small addition.
 
 ## Project structure
 
@@ -61,8 +63,8 @@ the `/api` function. Alternatively install the Vercel CLI and run
 4. In the project's **Storage** tab, create a Postgres database and attach
    it to this project — Vercel adds the `POSTGRES_URL` (etc.) env vars
    automatically. This is where user accounts are stored.
-5. Deploy. You'll get a URL like `dads-card-vault.vercel.app`.
-6. On his phone: open that URL in Safari (iPhone) or Chrome (Android), sign
+5. Deploy. You'll get a URL like `card-vault.vercel.app`.
+6. On your phone: open that URL in Safari (iPhone) or Chrome (Android), sign
    up for a profile, then "Add to Home Screen" — it installs like a real
    app and reuses the camera for captures.
 
@@ -86,10 +88,11 @@ to a specific account across devices.
   appraisal — good for tracking trends, not for insurance or tax purposes.
 - Each identify call costs a small amount of Anthropic API usage (a few
   cents per card at most) — worth keeping an eye on API usage/billing if
-  he's cataloging a big backlog at once.
+  you're cataloging a big backlog at once.
 
 ## Possible next steps
 
-- A "refresh value" button per card to re-run the pricing search later.
 - CSV export of the ledger for tax time.
+- Tie card data to accounts so a collection follows you across devices
+  (currently cards are stored per-device, accounts just gate access).
 - True eBay OAuth integration (bigger project — happy to scope separately).
