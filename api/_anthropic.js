@@ -1,7 +1,14 @@
-// Shared helper for calling Claude with the web_search tool and parsing a
+// Shared helper for calling Claude with web_search + web_fetch and parsing a
 // JSON object out of the text response. Used by both identify-card.js and
 // price-card.js so the "call model, strip fences, parse JSON" logic isn't
 // duplicated.
+//
+// web_fetch can only retrieve a URL that's already appeared in the
+// conversation - in practice that means a URL surfaced by a prior
+// web_search result. So the model's usual path is: search for candidate
+// listings, then fetch the promising ones to read actual page content
+// instead of just the search snippet (snippets alone often don't contain
+// confirmed sold prices).
 export async function callClaudeJson({ apiKey, model, system, content, maxTokens = 1200 }) {
   const response = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
@@ -14,7 +21,10 @@ export async function callClaudeJson({ apiKey, model, system, content, maxTokens
       model,
       max_tokens: maxTokens,
       system,
-      tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+      tools: [
+        { type: 'web_search_20260209', name: 'web_search' },
+        { type: 'web_fetch_20260209', name: 'web_fetch', max_uses: 8, max_content_tokens: 6000 }
+      ],
       messages: [{ role: 'user', content }]
     })
   });

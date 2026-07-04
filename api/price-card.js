@@ -18,6 +18,13 @@ sold/completed listings, PWCC auction results, Goldin auction results,
 130point.com sold search, CardLadder. Prioritize the most recent sales
 (ideally within the last 6 months) over older ones.
 
+Search result snippets are often not enough to confirm an actual sold price
+and date - use the fetch tool to open promising listing pages (eBay sold
+listings, 130point results, auction house pages) and read the real sale
+price, date, and title directly from the page before including it as a comp.
+Only include a comp once you've confirmed its price and date this way, or
+from a search snippet that already clearly states them.
+
 Return between 3 and 10 individual comps if you can find that many. If you
 cannot find sales of the exact parallel/grade, use the closest comps you can
 find and explain the discrepancy in "notes". If you find no usable comps at
@@ -61,7 +68,7 @@ export default async function handler(req, res) {
       apiKey,
       model: 'claude-opus-4-8',
       system: SYSTEM_PROMPT,
-      maxTokens: 1500,
+      maxTokens: 3000,
       content: [{ type: 'text', text: `Find recent sold comps for this card: ${description}` }]
     });
 
