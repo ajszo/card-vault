@@ -1,13 +1,14 @@
 import React, { useRef, useState } from 'react';
-import { identifyCard } from '../api.js';
+import { identifyCard, priceCard } from '../api.js';
 import { fileToBase64, resizeImage, SPORTS } from '../utils.js';
 import { newId } from '../db.js';
+import CompsList from './CompsList.jsx';
 
 const BLANK_FORM = {
   player: '', year: '', set: '', parallel: '', cardNumber: '',
   sport: 'Baseball', gradingCompany: '', grade: '',
   estimatedValue: '', purchasePrice: '', purchaseDate: '', purchaseSource: 'eBay',
-  confidence: null, notes: ''
+  confidence: null, notes: '', comps: [], priceNotes: ''
 };
 
 export default function CardCapture({ onSave }) {
@@ -18,7 +19,9 @@ export default function CardCapture({ onSave }) {
   const [backImageDataUrl, setBackImageDataUrl] = useState(null);
   const [rawBack, setRawBack] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [pricingLoading, setPricingLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [priceError, setPriceError] = useState(null);
   const [form, setForm] = useState(BLANK_FORM);
   const [identified, setIdentified] = useState(false);
 
@@ -53,6 +56,8 @@ export default function CardCapture({ onSave }) {
     if (!imageDataUrl) return;
     setLoading(true);
     setError(null);
+    setPriceError(null);
+    let idResult;
     try {
       // Send a higher-res encode than what's stored/displayed, so the model
       // can read fine print (card numbers, serials, foil patterns).
@@ -67,27 +72,43 @@ export default function CardCapture({ onSave }) {
         backBase64 = backForId.split(',')[1];
       }
 
-      const result = await identifyCard(base64, mediaType, backBase64, backMediaType);
+      idResult = await identifyCard(base64, mediaType, backBase64, backMediaType);
       setForm((f) => ({
         ...f,
-        player: result.player || '',
-        year: result.year || '',
-        set: result.set || '',
-        parallel: result.parallel || '',
-        cardNumber: result.cardNumber || '',
-        sport: SPORTS.includes(result.sport) ? result.sport : 'Other',
-        gradingCompany: result.gradingCompany || '',
-        grade: result.grade || '',
-        estimatedValue: result.estimatedValue ?? '',
-        confidence: result.confidence || null,
-        notes: result.notes || ''
+        player: idResult.player || '',
+        year: idResult.year || '',
+        set: idResult.set || '',
+        parallel: idResult.parallel || '',
+        cardNumber: idResult.cardNumber || '',
+        sport: SPORTS.includes(idResult.sport) ? idResult.sport : 'Other',
+        gradingCompany: idResult.gradingCompany || '',
+        grade: idResult.grade || '',
+        confidence: idResult.confidence || null,
+        notes: idResult.notes || ''
       }));
       setIdentified(true);
     } catch (err) {
       setError(err.message || 'Could not identify this card. You can still fill it in manually below.');
       setIdentified(true); // let them proceed manually
-    } finally {
       setLoading(false);
+      return;
+    }
+    setLoading(false);
+
+    if (!idResult.player) return;
+    setPricingLoading(true);
+    try {
+      const priceResult = await priceCard(idResult);
+      setForm((f) => ({
+        ...f,
+        estimatedValue: priceResult.estimatedValue ?? '',
+        comps: priceResult.comps || [],
+        priceNotes: priceResult.notes || ''
+      }));
+    } catch (err) {
+      setPriceError(err.message || 'Could not look up recent sales. You can still enter a value manually.');
+    } finally {
+      setPricingLoading(false);
     }
   }
 
@@ -103,6 +124,7 @@ export default function CardCapture({ onSave }) {
     setForm(BLANK_FORM);
     setIdentified(false);
     setError(null);
+    setPriceError(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
     if (backInputRef.current) backInputRef.current.value = '';
   }
@@ -125,7 +147,9 @@ export default function CardCapture({ onSave }) {
       gradingCompany: form.gradingCompany,
       grade: form.grade,
       estimatedValue: form.estimatedValue ? Number(form.estimatedValue) : null,
-      valueUpdatedAt: Date.now(),
+      valueUpdatedAt: form.comps.length ? Date.now() : null,
+      priceComps: form.comps,
+      priceNotes: form.priceNotes,
       purchasePrice: form.purchasePrice ? Number(form.purchasePrice) : null,
       purchaseDate: form.purchaseDate ? new Date(form.purchaseDate).getTime() : Date.now(),
       purchaseSource: form.purchaseSource,
@@ -265,10 +289,15 @@ export default function CardCapture({ onSave }) {
 
           <div className="divider" />
 
+          {pricingLoading && <p style={{ fontSize: 12.5, color: 'var(--ink-dim)' }}>Finding recent sold comps…</p>}
+          {priceError && <p style={{ color: 'var(--danger)', fontSize: 13 }}>{priceError}</p>}
+
           <div className="field-group">
             <label>Estimated market value ($)</label>
             <input type="number" value={form.estimatedValue} onChange={(e) => update('estimatedValue', e.target.value)} />
           </div>
+          {form.priceNotes && <p style={{ fontSize: 12.5, color: 'var(--ink-dim)', marginTop: -4 }}>{form.priceNotes}</p>}
+          <CompsList comps={form.comps} />
           <div style={{ display: 'flex', gap: 10 }}>
             <div className="field-group" style={{ flex: 1 }}>
               <label>What you paid ($)</label>

@@ -1,9 +1,16 @@
 // Vercel serverless function (Node.js runtime).
 // Holds ANTHROPIC_API_KEY server-side. Never call the Anthropic API with a
 // key embedded in frontend code.
+//
+// This function only identifies the card. Pricing is a separate call
+// (see price-card.js) so it can be re-run later ("refresh value") without
+// needing the photo again, and so pricing always uses the same
+// comps-based logic whether it's the first estimate or a later refresh.
 export const config = { runtime: 'nodejs' };
 
-const SYSTEM_PROMPT = `You are a sports card identification and pricing assistant.
+import { callClaudeJson } from './_anthropic.js';
+
+const SYSTEM_PROMPT = `You are a sports card identification assistant.
 You will be shown one or two photos of a single sports trading card (front,
 and optionally back). Look closely at small print - set logos, copyright
 lines, card number, serial numbering (e.g. "12/99"), and foil/parallel
@@ -12,9 +19,9 @@ parallel from similar-looking ones. If a back photo is included, use it to
 confirm the set/manufacturer and card number, since those are often clearer
 on the back than the front.
 
-Identify it as precisely as you can, then search the web for recent comparable
-sales (eBay sold listings, PWCC, Goldin, 130point, etc.) to estimate current
-market value for that exact card, parallel/serial number, and grade if visible.
+Identify it as precisely as you can. You may use web search only to verify
+uncertain details (e.g. confirming a parallel/insert name against a set
+checklist) - do not attempt to price the card here.
 
 Respond with ONLY a JSON object, no preamble, no markdown fences, matching
 exactly this shape:
@@ -27,8 +34,6 @@ exactly this shape:
   "sport": "Baseball" | "Basketball" | "Football" | "Hockey" | "Soccer" | "Other",
   "gradingCompany": string | null,
   "grade": string | null,
-  "estimatedValue": number,
-  "valueRange": [number, number],
   "confidence": "high" | "medium" | "low",
   "notes": string
 }
@@ -68,62 +73,20 @@ export default async function handler(req, res) {
   content.push({
     type: 'text',
     text: backImage
-      ? 'First image is the front, second is the back. Identify this card and estimate its current market value.'
-      : 'Identify this card and estimate its current market value.'
+      ? 'First image is the front, second is the back. Identify this card.'
+      : 'Identify this card.'
   });
 
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01'
-      },
-      body: JSON.stringify({
-        model: 'claude-opus-4-8',
-        max_tokens: 1200,
-        system: SYSTEM_PROMPT,
-        tools: [{ type: 'web_search_20250305', name: 'web_search' }],
-        messages: [
-          {
-            role: 'user',
-            content
-          }
-        ]
-      })
+    const parsed = await callClaudeJson({
+      apiKey,
+      model: 'claude-opus-4-8',
+      system: SYSTEM_PROMPT,
+      content,
+      maxTokens: 800
     });
-
-    if (!response.ok) {
-      const errText = await response.text();
-      res.status(502).json({ error: `Anthropic API error: ${errText}` });
-      return;
-    }
-
-    const data = await response.json();
-    const textBlocks = (data.content || [])
-      .filter((block) => block.type === 'text')
-      .map((block) => block.text)
-      .join('\n');
-
-    const cleaned = textBlocks.replace(/```json|```/g, '').trim();
-
-    let parsed;
-    try {
-      parsed = JSON.parse(cleaned);
-    } catch {
-      // Fall back to grabbing the last {...} block in case the model added stray text
-      const match = cleaned.match(/\{[\s\S]*\}/);
-      parsed = match ? JSON.parse(match[0]) : null;
-    }
-
-    if (!parsed) {
-      res.status(502).json({ error: 'Could not parse a card result from the model response' });
-      return;
-    }
-
     res.status(200).json(parsed);
   } catch (err) {
-    res.status(500).json({ error: err.message || 'Unknown server error' });
+    res.status(err.message?.startsWith('Anthropic API error') ? 502 : 500).json({ error: err.message || 'Unknown server error' });
   }
 }

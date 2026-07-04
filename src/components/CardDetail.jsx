@@ -1,13 +1,36 @@
 import React, { useState } from 'react';
 import { money, dateStr } from '../utils.js';
+import { priceCard } from '../api.js';
+import CompsList from './CompsList.jsx';
 
 export default function CardDetail({ card, onClose, onSave, onDelete }) {
   const [sellMode, setSellMode] = useState(false);
   const [soldPrice, setSoldPrice] = useState('');
   const [soldDate, setSoldDate] = useState(new Date().toISOString().slice(0, 10));
   const [soldSource, setSoldSource] = useState('eBay');
+  const [refreshing, setRefreshing] = useState(false);
+  const [refreshError, setRefreshError] = useState(null);
 
   if (!card) return null;
+
+  async function refreshValue() {
+    setRefreshing(true);
+    setRefreshError(null);
+    try {
+      const priceResult = await priceCard(card);
+      await onSave({
+        ...card,
+        estimatedValue: priceResult.estimatedValue ?? card.estimatedValue,
+        priceComps: priceResult.comps || [],
+        priceNotes: priceResult.notes || '',
+        valueUpdatedAt: (priceResult.comps || []).length ? Date.now() : card.valueUpdatedAt
+      });
+    } catch (err) {
+      setRefreshError(err.message || 'Could not refresh the value right now.');
+    } finally {
+      setRefreshing(false);
+    }
+  }
 
   async function markSold() {
     await onSave({
@@ -48,6 +71,16 @@ export default function CardDetail({ card, onClose, onSave, onDelete }) {
         )}
         <div className="row-line"><span className="k">Sport</span><span className="v">{card.sport}</span></div>
         <div className="row-line"><span className="k">Estimated value</span><span className="v">{money(card.estimatedValue)}</span></div>
+        {card.valueUpdatedAt && (
+          <div className="row-line"><span className="k">Priced</span><span className="v">{dateStr(card.valueUpdatedAt)}</span></div>
+        )}
+
+        <button className="btn btn-ghost" onClick={refreshValue} disabled={refreshing} style={{ marginBottom: 8 }}>
+          {refreshing ? 'Finding recent sales…' : 'Refresh value'}
+        </button>
+        {refreshError && <p style={{ color: 'var(--danger)', fontSize: 13 }}>{refreshError}</p>}
+        {card.priceNotes && <p style={{ fontSize: 12.5, color: 'var(--ink-dim)', marginTop: -4 }}>{card.priceNotes}</p>}
+        <CompsList comps={card.priceComps} />
 
         <div className="divider" />
 
