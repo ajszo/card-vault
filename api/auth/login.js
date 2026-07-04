@@ -20,7 +20,7 @@ export default async function handler(req, res) {
   try {
     await ensureUsersTable();
 
-    const result = await sql`SELECT id, username, password_hash FROM users WHERE username = ${cleanUsername}`;
+    const result = await sql`SELECT id, username, password_hash, theme FROM users WHERE username = ${cleanUsername}`;
     const user = result.rows[0];
     if (!user) {
       res.status(401).json({ error: 'Incorrect username or passcode' });
@@ -34,7 +34,7 @@ export default async function handler(req, res) {
     }
 
     res.setHeader('Set-Cookie', createSessionCookie(user));
-    res.status(200).json({ user: { id: user.id, username: user.username } });
+    res.status(200).json({ user: { id: user.id, username: user.username, theme: user.theme } });
   } catch (err) {
     res.status(500).json({ error: err.message || 'Could not log in' });
   }

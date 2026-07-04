@@ -35,3 +35,13 @@ export async function fetchCurrentUser() {
   const data = await parseOrThrow(res);
   return data.user;
 }
+
+export async function updateTheme(theme) {
+  const res = await fetch('/api/auth/theme', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ theme })
+  });
+  const data = await parseOrThrow(res);
+  return data.theme;
+}

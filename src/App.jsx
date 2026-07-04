@@ -4,13 +4,14 @@ import CardGrid, { StatsBar } from './components/CardGrid.jsx';
 import CardDetail from './components/CardDetail.jsx';
 import Ledger from './components/Ledger.jsx';
 import Login from './components/Login.jsx';
+import Profile from './components/Profile.jsx';
 import { getAllCards, saveCard, deleteCard } from './db.js';
 import { SPORTS } from './utils.js';
-import { fetchCurrentUser, logout } from './auth.js';
+import { fetchCurrentUser } from './auth.js';
 
 export default function App() {
   const [user, setUser] = useState(undefined); // undefined = checking session, null = logged out
-  const [tab, setTab] = useState('collection'); // collection | capture | ledger
+  const [tab, setTab] = useState('collection'); // collection | capture | ledger | profile
   const [cards, setCards] = useState([]);
   const [sportFilter, setSportFilter] = useState('All');
   const [search, setSearch] = useState('');
@@ -20,6 +21,10 @@ export default function App() {
   useEffect(() => {
     fetchCurrentUser().then(setUser).catch(() => setUser(null));
   }, []);
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', user?.theme || 'forest');
+  }, [user?.theme]);
 
   useEffect(() => {
     getAllCards().then((c) => { setCards(c); setLoaded(true); });
@@ -64,16 +69,7 @@ export default function App() {
     <div className="app">
       <header className="app-header">
         <span className="eyebrow">Est. this season</span>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h1>{user.username}'s Card Vault</h1>
-          <button
-            className="btn btn-ghost"
-            style={{ padding: '3px 10px', fontSize: 12 }}
-            onClick={async () => { await logout(); setUser(null); }}
-          >
-            Log out
-          </button>
-        </div>
+        <h1>{user.username}'s Card Vault</h1>
       </header>
 
       {tab === 'collection' && (
@@ -105,6 +101,14 @@ export default function App() {
 
       {tab === 'ledger' && <Ledger cards={cards} />}
 
+      {tab === 'profile' && (
+        <Profile
+          user={user}
+          onThemeChange={(theme) => setUser((u) => ({ ...u, theme }))}
+          onLoggedOut={() => setUser(null)}
+        />
+      )}
+
       {openCard && (
         <CardDetail
           card={openCard}
@@ -123,6 +127,9 @@ export default function App() {
         </button>
         <button className={`tab-btn ${tab === 'ledger' ? 'active' : ''}`} onClick={() => setTab('ledger')}>
           <span className="icon">📒</span>Ledger
+        </button>
+        <button className={`tab-btn ${tab === 'profile' ? 'active' : ''}`} onClick={() => setTab('profile')}>
+          <span className="icon">👤</span>Profile
         </button>
       </nav>
     </div>

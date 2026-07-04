@@ -34,12 +34,12 @@ export default async function handler(req, res) {
     const passwordHash = await bcrypt.hash(passcode, 10);
     const inserted = await sql`
       INSERT INTO users (username, password_hash) VALUES (${cleanUsername}, ${passwordHash})
-      RETURNING id, username
+      RETURNING id, username, theme
     `;
     const user = inserted.rows[0];
 
     res.setHeader('Set-Cookie', createSessionCookie(user));
-    res.status(200).json({ user: { id: user.id, username: user.username } });
+    res.status(200).json({ user: { id: user.id, username: user.username, theme: user.theme } });
   } catch (err) {
     res.status(500).json({ error: err.message || 'Could not create account' });
   }

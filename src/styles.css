@@ -20,6 +20,67 @@
   --font-mono: 'IBM Plex Mono', monospace;
 }
 
+/* ---------- Theme palettes ----------
+   :root above is "forest" (the default). Each palette only overrides the
+   felt (background) and accent (brass) tones - ink, danger, and the sport
+   stripes stay constant so status colors and card readability don't shift. */
+:root[data-theme='moss'] {
+  --felt: #1A1F17;
+  --felt-raised: #222A1E;
+  --felt-line: #333C2A;
+  --brass: #ABA45A;
+  --brass-dim: #7A7540;
+}
+:root[data-theme='slate'] {
+  --felt: #171B1F;
+  --felt-raised: #1F262B;
+  --felt-line: #2C363D;
+  --brass: #7FA3B8;
+  --brass-dim: #55748A;
+}
+:root[data-theme='clay'] {
+  --felt: #1D1714;
+  --felt-raised: #26201B;
+  --felt-line: #3A2E26;
+  --brass: #C98B5C;
+  --brass-dim: #8C5F3C;
+}
+:root[data-theme='plum'] {
+  --felt: #1B171C;
+  --felt-raised: #241F26;
+  --felt-line: #362E39;
+  --brass: #A87FA8;
+  --brass-dim: #6F5570;
+}
+
+/* ---------- Theme swatches (Profile tab) ---------- */
+.theme-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+  gap: 12px;
+  margin: 10px 0 4px;
+}
+.theme-swatch {
+  border-radius: var(--radius);
+  border: 2px solid transparent;
+  padding: 14px 8px 10px;
+  cursor: pointer;
+  text-align: center;
+  font-family: var(--font-body);
+}
+.theme-swatch.selected { border-color: var(--ink); }
+.theme-swatch .dot {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  margin: 0 auto 8px;
+}
+.theme-swatch .name {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
 * { box-sizing: border-box; }
 
 html, body, #root {

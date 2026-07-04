@@ -1,5 +1,6 @@
 export const config = { runtime: 'nodejs' };
 
+import { sql, ensureUsersTable } from '../_db.js';
 import { getSessionFromReq } from '../_session.js';
 
 export default async function handler(req, res) {
@@ -12,5 +13,13 @@ export default async function handler(req, res) {
     res.status(200).json({ user: null });
     return;
   }
-  res.status(200).json({ user: { id: session.userId, username: session.username } });
+
+  try {
+    await ensureUsersTable();
+    const result = await sql`SELECT theme FROM users WHERE id = ${session.userId}`;
+    const theme = result.rows[0]?.theme || 'forest';
+    res.status(200).json({ user: { id: session.userId, username: session.username, theme } });
+  } catch (err) {
+    res.status(500).json({ error: err.message || 'Could not load profile' });
+  }
 }
