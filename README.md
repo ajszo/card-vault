@@ -1,0 +1,78 @@
+# Dad's Card Vault
+
+A mobile-installable PWA for tracking a sports card collection: snap a photo,
+get an AI-identified card + estimated market value, and keep a running
+buy/sell ledger — all working offline once installed.
+
+## What it does
+
+- **Add card tab**: take a photo → sends it to a serverless function that
+  calls Claude (vision) to identify the player/year/set/grade, and uses web
+  search to estimate current market value from recent sold comps. You
+  review/edit before saving — the AI guess is a starting point, not gospel.
+- **Vault tab**: all cards in one filterable grid (by sport) with search,
+  shown as card-shaped tiles with a sport-color stripe.
+- **Ledger tab**: every purchase and sale in one chronological list, with
+  running profit/loss.
+- Everything is stored locally in the browser (IndexedDB), so it works
+  fully offline except for the "Identify card" step, which needs network.
+
+## Why there's no live eBay account connection
+
+A real eBay sync (auto-importing his listings/sold prices) requires eBay's
+OAuth developer API, which needs a registered developer app (approval can
+take a while) and a backend to securely hold his access tokens — not
+something safe to do from code running in a browser. This app instead
+estimates value via web search on each card, and gives him a spot to log
+what he actually paid/sold for, on eBay or anywhere else. If you want true
+eBay sync down the road, that's a follow-on project, not a small addition.
+
+## Project structure
+
+```
+card-vault/
+├── src/               React frontend
+├── api/identify-card.js   Vercel serverless function (holds the API key)
+├── public/icons/       App icons for install prompt
+└── vite.config.js      PWA manifest + service worker config
+```
+
+## Running it locally
+
+```bash
+npm install
+npm run dev
+```
+
+The identify function needs a backend running too — easiest path is to
+deploy to Vercel (below) even for testing, since `vite dev` alone won't run
+the `/api` function. Alternatively install the Vercel CLI and run
+`vercel dev` instead of `npm run dev`.
+
+## Deploying (recommended: Vercel, free tier is enough)
+
+1. Push this folder to a GitHub repo.
+2. Go to vercel.com → New Project → import that repo. Vercel auto-detects
+   Vite and the `/api` folder.
+3. In the project's Settings → Environment Variables, add:
+   - `ANTHROPIC_API_KEY` = your Anthropic API key (console.anthropic.com)
+4. Deploy. You'll get a URL like `dads-card-vault.vercel.app`.
+5. On his phone: open that URL in Safari (iPhone) or Chrome (Android), then
+   "Add to Home Screen" — it installs like a real app, works offline for
+   browsing his vault, and reuses the camera for captures.
+
+## Notes on the AI card ID + pricing
+
+- Grading and serial numbers are only readable if they're visible/legible
+  in the photo — encourage good lighting and a straight-on shot.
+- Estimated values are a starting point from recent comps, not an
+  appraisal — good for tracking trends, not for insurance or tax purposes.
+- Each identify call costs a small amount of Anthropic API usage (a few
+  cents per card at most) — worth keeping an eye on API usage/billing if
+  he's cataloging a big backlog at once.
+
+## Possible next steps
+
+- A "refresh value" button per card to re-run the pricing search later.
+- CSV export of the ledger for tax time.
+- True eBay OAuth integration (bigger project — happy to scope separately).
