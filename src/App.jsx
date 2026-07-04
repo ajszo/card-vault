@@ -3,16 +3,23 @@ import CardCapture from './components/CardCapture.jsx';
 import CardGrid, { StatsBar } from './components/CardGrid.jsx';
 import CardDetail from './components/CardDetail.jsx';
 import Ledger from './components/Ledger.jsx';
+import Login from './components/Login.jsx';
 import { getAllCards, saveCard, deleteCard } from './db.js';
 import { SPORTS } from './utils.js';
+import { fetchCurrentUser, logout } from './auth.js';
 
 export default function App() {
+  const [user, setUser] = useState(undefined); // undefined = checking session, null = logged out
   const [tab, setTab] = useState('collection'); // collection | capture | ledger
   const [cards, setCards] = useState([]);
   const [sportFilter, setSportFilter] = useState('All');
   const [search, setSearch] = useState('');
   const [openCard, setOpenCard] = useState(null);
   const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    fetchCurrentUser().then(setUser).catch(() => setUser(null));
+  }, []);
 
   useEffect(() => {
     getAllCards().then((c) => { setCards(c); setLoaded(true); });
@@ -45,11 +52,29 @@ export default function App() {
     });
   }, [cards, sportFilter, search]);
 
+  if (user === undefined) {
+    return <div className="app" />;
+  }
+
+  if (!user) {
+    return <Login onAuthed={setUser} />;
+  }
+
   return (
     <div className="app">
       <header className="app-header">
         <span className="eyebrow">Est. this season</span>
         <h1>Dad's Card Vault</h1>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 6 }}>
+          <span style={{ fontSize: 12, color: 'var(--ink-dim)' }}>Signed in as {user.username}</span>
+          <button
+            className="btn btn-ghost"
+            style={{ padding: '3px 10px', fontSize: 12 }}
+            onClick={async () => { await logout(); setUser(null); }}
+          >
+            Log out
+          </button>
+        </div>
       </header>
 
       {tab === 'collection' && (

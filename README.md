@@ -56,10 +56,24 @@ the `/api` function. Alternatively install the Vercel CLI and run
    Vite and the `/api` folder.
 3. In the project's Settings → Environment Variables, add:
    - `ANTHROPIC_API_KEY` = your Anthropic API key (console.anthropic.com)
-4. Deploy. You'll get a URL like `dads-card-vault.vercel.app`.
-5. On his phone: open that URL in Safari (iPhone) or Chrome (Android), then
-   "Add to Home Screen" — it installs like a real app, works offline for
-   browsing his vault, and reuses the camera for captures.
+   - `SESSION_SECRET` = a long random string (e.g. output of
+     `openssl rand -hex 32`) used to sign login session cookies
+4. In the project's **Storage** tab, create a Postgres database and attach
+   it to this project — Vercel adds the `POSTGRES_URL` (etc.) env vars
+   automatically. This is where user accounts are stored.
+5. Deploy. You'll get a URL like `dads-card-vault.vercel.app`.
+6. On his phone: open that URL in Safari (iPhone) or Chrome (Android), sign
+   up for a profile, then "Add to Home Screen" — it installs like a real
+   app and reuses the camera for captures.
+
+## Accounts
+
+Signing up creates a row in the `users` table (created automatically on
+first use) with a bcrypt-hashed passcode — never the passcode itself.
+Logging in sets an httpOnly, signed session cookie; there's no separate
+sessions table. Card data itself is still stored per-device (see below) —
+accounts currently gate access to the app, but collections aren't yet tied
+to a specific account across devices.
 
 ## Notes on the AI card ID + pricing
 
