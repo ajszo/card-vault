@@ -18,11 +18,17 @@ that page is a real completed sale, not an active one. Fetch that URL FIRST,
 before doing any general web search. It's the fastest, most reliable source
 and won't waste tool calls on active listings by mistake.
 
-Read individual sold listings directly off that page: price, date, and title.
-If it doesn't have enough matching results (wrong parallel/grade, too few, or
-too old), THEN use web_search for other sold-comp sources: 130point.com sold
-search, CardLadder, PWCC auction results, Goldin auction results. Prioritize
-the most recent sales (ideally within the last 6 months) over older ones.
+If that page shows zero results, redirects to a generic seller/store page, or
+otherwise has no real listings on it - do NOT retry it, do NOT tweak its URL,
+and do NOT spend further tool calls investigating it. Immediately move on to
+web_search for other sold-comp sources instead: 130point.com sold search,
+CardLadder, PWCC auction results, Goldin auction results. This is common for
+low-value/common cards with few eBay sales - it's not worth troubleshooting.
+
+Otherwise, read individual sold listings directly off that eBay page: price,
+date, and title. If it doesn't have enough matching results (wrong
+parallel/grade, too few, or too old), also fall back to the sources above.
+Prioritize the most recent sales (ideally within the last 6 months).
 
 Do not spend tool calls investigating active/asking-price listings (Buy It
 Now, Best Offer, current bid) - they are not sold comps and are not useful
@@ -80,10 +86,16 @@ export default async function handler(req, res) {
     gradingCompany && grade && `${gradingCompany} ${grade}`
   ].filter(Boolean).join(' ');
 
+  // A separate, deliberately looser query just for the eBay URL - "sport"
+  // and a literal "#" rarely appear verbatim in listing titles, and eBay's
+  // title search returns zero results (redirecting to a generic page)
+  // rather than doing anything fuzzy when a query is over-constrained.
+  const ebayQuery = [year, set, parallel, cardNumber, player].filter(Boolean).join(' ');
+
   // web_fetch can only retrieve a URL that's already in the conversation, so
   // this pre-filtered eBay sold-listings search is handed to the model
   // directly rather than relying on it to discover the LH_Sold param itself.
-  const ebaySoldUrl = `https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent(description)}&LH_Sold=1&LH_Complete=1`;
+  const ebaySoldUrl = `https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent(ebayQuery)}&LH_Sold=1&LH_Complete=1`;
 
   try {
     const parsed = await callClaudeJson({
