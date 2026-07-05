@@ -21,9 +21,14 @@ export async function callClaudeJson({ apiKey, model, system, content, maxTokens
       model,
       max_tokens: maxTokens,
       system,
+      // Caps worst-case cost on a hard-to-price card: with the direct
+      // pre-filtered eBay URL and "don't retry dead ends" prompt guidance,
+      // a well-behaved run rarely needs anywhere near this many calls -
+      // this budget mainly exists to make failures cheap instead of
+      // letting the model grind through many search/fetch attempts.
       tools: [
-        { type: 'web_search_20260209', name: 'web_search', max_uses: 15 },
-        { type: 'web_fetch_20260209', name: 'web_fetch', max_uses: 15, max_content_tokens: 3000 }
+        { type: 'web_search_20260209', name: 'web_search', max_uses: 8 },
+        { type: 'web_fetch_20260209', name: 'web_fetch', max_uses: 6, max_content_tokens: 2500 }
       ],
       messages: [{ role: 'user', content }]
     })
