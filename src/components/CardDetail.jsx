@@ -3,6 +3,7 @@ import { money, dateStr } from '../utils.js';
 import { priceCard } from '../api.js';
 import CompsList from './CompsList.jsx';
 import ScarcityMeter from './ScarcityMeter.jsx';
+import ValueTrend from './ValueTrend.jsx';
 
 export default function CardDetail({ card, onClose, onSave, onDelete }) {
   const [sellMode, setSellMode] = useState(false);
@@ -19,6 +20,8 @@ export default function CardDetail({ card, onClose, onSave, onDelete }) {
     setRefreshError(null);
     try {
       const priceResult = await priceCard(card);
+      const succeeded = (priceResult.comps || []).length > 0 && priceResult.estimatedValue != null;
+      const history = card.valueHistory || [];
       await onSave({
         ...card,
         estimatedValue: priceResult.estimatedValue ?? card.estimatedValue,
@@ -27,7 +30,11 @@ export default function CardDetail({ card, onClose, onSave, onDelete }) {
         popCount: priceResult.popCount ?? null,
         sales12mo: priceResult.sales12mo ?? null,
         scarcityIndex: priceResult.scarcityIndex ?? null,
-        valueUpdatedAt: (priceResult.comps || []).length ? Date.now() : card.valueUpdatedAt
+        valueUpdatedAt: succeeded ? Date.now() : card.valueUpdatedAt,
+        // Only log a new point when this refresh actually confirmed a fresh
+        // price - a failed lookup that falls back to the old value isn't a
+        // real new data point for the trend.
+        valueHistory: succeeded ? [...history, { date: Date.now(), value: priceResult.estimatedValue }] : history
       });
     } catch (err) {
       setRefreshError(err.message || 'Could not refresh the value right now.');
@@ -84,6 +91,7 @@ export default function CardDetail({ card, onClose, onSave, onDelete }) {
         </button>
         {refreshError && <p style={{ color: 'var(--danger)', fontSize: 13 }}>{refreshError}</p>}
         {card.priceNotes && <p style={{ fontSize: 12.5, color: 'var(--ink-dim)', marginTop: -4 }}>{card.priceNotes}</p>}
+        <ValueTrend history={card.valueHistory} />
         {card.gradingCompany && (
           <ScarcityMeter index={card.scarcityIndex} popCount={card.popCount} sales12mo={card.sales12mo} />
         )}

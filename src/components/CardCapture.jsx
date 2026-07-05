@@ -139,6 +139,7 @@ export default function CardCapture({ onSave }) {
       setError('Give the card at least a player name before saving.');
       return;
     }
+    const estimatedValue = form.estimatedValue ? Number(form.estimatedValue) : null;
     const card = {
       id: newId(),
       imageDataUrl,
@@ -151,8 +152,9 @@ export default function CardCapture({ onSave }) {
       sport: form.sport,
       gradingCompany: form.gradingCompany,
       grade: form.grade,
-      estimatedValue: form.estimatedValue ? Number(form.estimatedValue) : null,
+      estimatedValue,
       valueUpdatedAt: form.comps.length ? Date.now() : null,
+      valueHistory: estimatedValue !== null ? [{ date: Date.now(), value: estimatedValue }] : [],
       priceComps: form.comps,
       priceNotes: form.priceNotes,
       popCount: form.popCount,
