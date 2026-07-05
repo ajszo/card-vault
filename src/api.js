@@ -45,6 +45,7 @@ export async function priceCard({ player, year, set, parallel, cardNumber, sport
   // {
   //   comps: [{ date, price, source, url, title }],
   //   medianValue, meanValue, estimatedValue, valueRange: [low, high],
+  //   estimateType: 'confirmed' | 'unconfirmed' | null,
   //   popCount, sales12mo, scarcityIndex,
   //   confidence: 'high' | 'medium' | 'low', notes
   // }

@@ -20,20 +20,23 @@ export default function CardDetail({ card, onClose, onSave, onDelete }) {
     setRefreshError(null);
     try {
       const priceResult = await priceCard(card);
-      const succeeded = (priceResult.comps || []).length > 0 && priceResult.estimatedValue != null;
+      // A confirmed or unconfirmed estimate both count as a real refresh; only
+      // a total lookup failure (no value at all) leaves the card unchanged.
+      const succeeded = priceResult.estimatedValue != null;
       const history = card.valueHistory || [];
       await onSave({
         ...card,
         estimatedValue: priceResult.estimatedValue ?? card.estimatedValue,
+        estimateType: priceResult.estimateType ?? card.estimateType,
         priceComps: priceResult.comps || [],
         priceNotes: priceResult.notes || '',
         popCount: priceResult.popCount ?? null,
         sales12mo: priceResult.sales12mo ?? null,
         scarcityIndex: priceResult.scarcityIndex ?? null,
         valueUpdatedAt: succeeded ? Date.now() : card.valueUpdatedAt,
-        // Only log a new point when this refresh actually confirmed a fresh
-        // price - a failed lookup that falls back to the old value isn't a
-        // real new data point for the trend.
+        // Only log a new point when this refresh actually produced a fresh
+        // value (confirmed or unconfirmed) - a failed lookup that falls back
+        // to the old value isn't a real new data point for the trend.
         valueHistory: succeeded ? [...history, { date: Date.now(), value: priceResult.estimatedValue }] : history
       });
     } catch (err) {
@@ -81,7 +84,17 @@ export default function CardDetail({ card, onClose, onSave, onDelete }) {
           <div className="row-line"><span className="k">Grade</span><span className="v">{card.gradingCompany} {card.grade}</span></div>
         )}
         <div className="row-line"><span className="k">Sport</span><span className="v">{card.sport}</span></div>
-        <div className="row-line"><span className="k">Estimated value</span><span className="v">{money(card.estimatedValue)}</span></div>
+        <div className="row-line">
+          <span className="k">Estimated value</span>
+          <span className="v">
+            {money(card.estimatedValue)}
+            {card.estimateType === 'unconfirmed' && (
+              <span style={{ display: 'block', fontFamily: 'var(--font-body)', color: 'var(--danger)', fontSize: 10.5, textAlign: 'right' }}>
+                unconfirmed estimate
+              </span>
+            )}
+          </span>
+        </div>
         {card.valueUpdatedAt && (
           <div className="row-line"><span className="k">Priced</span><span className="v">{dateStr(card.valueUpdatedAt)}</span></div>
         )}

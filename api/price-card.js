@@ -37,8 +37,16 @@ fetching it.
 
 Return between 3 and 10 individual comps if you can find that many. If you
 cannot find sales of the exact parallel/grade, use the closest comps you can
-find and explain the discrepancy in "notes". If you find no usable comps at
-all, return an empty comps array and explain why in "notes".
+find and explain the discrepancy in "notes".
+
+If you find NO usable confirmed comps at all, return an empty comps array,
+explain why in "notes", and instead give your best-judgment rough price range
+in "roughEstimate" - based on whatever indirect signal you did find (active
+asking prices, comps for similar cards/parallels, general market knowledge of
+this player/set/era). Always provide a roughEstimate in this case, even a
+wide one - a rough range is more useful than nothing. Only omit it if you
+truly have no basis to even guess (e.g. you couldn't identify the card at
+all).
 
 PART 2 - SCARCITY DATA (only if a grading company and grade were given)
 Look up the population report for this exact card/parallel at that specific
@@ -57,6 +65,7 @@ exactly this shape:
   "comps": [
     { "date": "YYYY-MM-DD" | null, "price": number, "source": string, "url": string | null, "title": string }
   ],
+  "roughEstimate": { "low": number, "high": number } | null,
   "popCount": number | null,
   "sales12mo": number | null,
   "confidence": "high" | "medium" | "low",
@@ -122,6 +131,23 @@ export default async function handler(req, res) {
       meanValue = prices.reduce((sum, p) => sum + p, 0) / prices.length;
     }
 
+    // Only fall back to the model's own guess when we have zero confirmed
+    // comps to compute a real number from - never lets a guess override
+    // math done from actual sold prices.
+    let estimatedValue = medianValue;
+    let valueRange = prices.length ? [prices[0], prices[prices.length - 1]] : null;
+    let estimateType = prices.length ? 'confirmed' : null;
+
+    if (!prices.length && parsed.roughEstimate) {
+      const low = Number(parsed.roughEstimate.low);
+      const high = Number(parsed.roughEstimate.high);
+      if (Number.isFinite(low) && Number.isFinite(high) && low > 0 && high >= low) {
+        estimatedValue = Math.round((low + high) / 2);
+        valueRange = [low, high];
+        estimateType = 'unconfirmed';
+      }
+    }
+
     // Scarcity Index = 12-month sales / population count. Ungraded cards have
     // no cert population, so the index doesn't apply regardless of what the
     // model returned - force it to null rather than trust a stray guess.
@@ -139,8 +165,9 @@ export default async function handler(req, res) {
       comps,
       medianValue,
       meanValue,
-      estimatedValue: medianValue,
-      valueRange: prices.length ? [prices[0], prices[prices.length - 1]] : null,
+      estimatedValue,
+      valueRange,
+      estimateType,
       popCount,
       sales12mo,
       scarcityIndex,

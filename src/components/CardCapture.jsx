@@ -10,7 +10,7 @@ const BLANK_FORM = {
   sport: 'Baseball', gradingCompany: '', grade: '',
   estimatedValue: '', purchasePrice: '', purchaseDate: '', purchaseSource: 'eBay',
   confidence: null, notes: '', comps: [], priceNotes: '',
-  popCount: null, sales12mo: null, scarcityIndex: null
+  popCount: null, sales12mo: null, scarcityIndex: null, estimateType: null
 };
 
 export default function CardCapture({ onSave }) {
@@ -108,7 +108,8 @@ export default function CardCapture({ onSave }) {
         priceNotes: priceResult.notes || '',
         popCount: priceResult.popCount ?? null,
         sales12mo: priceResult.sales12mo ?? null,
-        scarcityIndex: priceResult.scarcityIndex ?? null
+        scarcityIndex: priceResult.scarcityIndex ?? null,
+        estimateType: priceResult.estimateType ?? null
       }));
     } catch (err) {
       setPriceError(err.message || 'Could not look up recent sales. You can still enter a value manually.');
@@ -153,7 +154,8 @@ export default function CardCapture({ onSave }) {
       gradingCompany: form.gradingCompany,
       grade: form.grade,
       estimatedValue,
-      valueUpdatedAt: form.comps.length ? Date.now() : null,
+      estimateType: form.estimateType,
+      valueUpdatedAt: estimatedValue !== null ? Date.now() : null,
       valueHistory: estimatedValue !== null ? [{ date: Date.now(), value: estimatedValue }] : [],
       priceComps: form.comps,
       priceNotes: form.priceNotes,
@@ -303,7 +305,14 @@ export default function CardCapture({ onSave }) {
           {priceError && <p style={{ color: 'var(--danger)', fontSize: 13 }}>{priceError}</p>}
 
           <div className="field-group">
-            <label>Estimated market value ($)</label>
+            <label>
+              Estimated market value ($)
+              {form.estimateType === 'unconfirmed' && (
+                <span style={{ color: 'var(--danger)', textTransform: 'none', letterSpacing: 0, marginLeft: 6 }}>
+                  · unconfirmed estimate, no sold comps found
+                </span>
+              )}
+            </label>
             <input type="number" value={form.estimatedValue} onChange={(e) => update('estimatedValue', e.target.value)} />
           </div>
           {form.priceNotes && <p style={{ fontSize: 12.5, color: 'var(--ink-dim)', marginTop: -4 }}>{form.priceNotes}</p>}

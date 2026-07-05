@@ -37,7 +37,7 @@ function CardTile({ card, onOpen }) {
       <div className="info">
         <div className="player">{card.player || 'Unnamed card'}</div>
         <div className="meta">{[card.year, card.set].filter(Boolean).join(' · ') || '—'}</div>
-        <div className="value">{money(card.estimatedValue)}</div>
+        <div className="value">{card.estimateType === 'unconfirmed' ? '~' : ''}{money(card.estimatedValue)}</div>
         {card.gradingCompany && card.scarcityIndex !== null && card.scarcityIndex !== undefined && (
           <div style={{ fontSize: 10, marginTop: 3, color: scarcityTier(card.scarcityIndex).color }}>
             {card.scarcityIndex.toFixed(1)}% {scarcityTier(card.scarcityIndex).icon}
