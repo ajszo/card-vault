@@ -4,6 +4,7 @@ import { fileToBase64, resizeImage, SPORTS } from '../utils.js';
 import { newId } from '../db.js';
 import CompsList from './CompsList.jsx';
 import ScarcityMeter from './ScarcityMeter.jsx';
+import CropStep from './CropStep.jsx';
 
 const BLANK_FORM = {
   player: '', year: '', set: '', parallel: '', cardNumber: '',
@@ -18,8 +19,10 @@ export default function CardCapture({ onSave }) {
   const backInputRef = useRef(null);
   const [imageDataUrl, setImageDataUrl] = useState(null);
   const [rawFront, setRawFront] = useState(null);
+  const [pendingFrontRaw, setPendingFrontRaw] = useState(null);
   const [backImageDataUrl, setBackImageDataUrl] = useState(null);
   const [rawBack, setRawBack] = useState(null);
+  const [pendingBackRaw, setPendingBackRaw] = useState(null);
   const [loading, setLoading] = useState(false);
   const [pricingLoading, setPricingLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -32,25 +35,36 @@ export default function CardCapture({ onSave }) {
     if (!file) return;
     setError(null);
     setIdentified(false);
-    const raw = await fileToBase64(file);
-    setRawFront(raw);
-    const resized = await resizeImage(raw);
-    setImageDataUrl(resized);
     setForm(BLANK_FORM);
+    const raw = await fileToBase64(file);
+    setPendingFrontRaw(raw);
+  }
+
+  async function finishFrontCrop(dataUrl) {
+    setRawFront(dataUrl);
+    setPendingFrontRaw(null);
+    const resized = await resizeImage(dataUrl);
+    setImageDataUrl(resized);
   }
 
   async function handleBackFile(e) {
     const file = e.target.files?.[0];
     if (!file) return;
     const raw = await fileToBase64(file);
-    setRawBack(raw);
-    const resized = await resizeImage(raw);
+    setPendingBackRaw(raw);
+  }
+
+  async function finishBackCrop(dataUrl) {
+    setRawBack(dataUrl);
+    setPendingBackRaw(null);
+    const resized = await resizeImage(dataUrl);
     setBackImageDataUrl(resized);
   }
 
   function removeBack() {
     setRawBack(null);
     setBackImageDataUrl(null);
+    setPendingBackRaw(null);
     if (backInputRef.current) backInputRef.current.value = '';
   }
 
@@ -125,8 +139,10 @@ export default function CardCapture({ onSave }) {
   function reset() {
     setImageDataUrl(null);
     setRawFront(null);
+    setPendingFrontRaw(null);
     setBackImageDataUrl(null);
     setRawBack(null);
+    setPendingBackRaw(null);
     setForm(BLANK_FORM);
     setIdentified(false);
     setError(null);
@@ -180,7 +196,7 @@ export default function CardCapture({ onSave }) {
     <div className="capture-screen">
       <span className="eyebrow" style={{ display: 'block', marginBottom: 10 }}>Add a card</span>
 
-      {!imageDataUrl && (
+      {!imageDataUrl && !pendingFrontRaw && (
         <div
           className="capture-drop"
           onClick={() => fileInputRef.current?.click()}
@@ -199,6 +215,14 @@ export default function CardCapture({ onSave }) {
         onChange={handleFile}
       />
 
+      {pendingFrontRaw && (
+        <CropStep
+          imageSrc={pendingFrontRaw}
+          onDone={finishFrontCrop}
+          onSkip={() => finishFrontCrop(pendingFrontRaw)}
+        />
+      )}
+
       {imageDataUrl && (
         <div className="capture-preview">
           <img src={imageDataUrl} alt="Captured card" />
@@ -216,7 +240,15 @@ export default function CardCapture({ onSave }) {
             onChange={handleBackFile}
           />
 
-          {!backImageDataUrl && (
+          {pendingBackRaw && (
+            <CropStep
+              imageSrc={pendingBackRaw}
+              onDone={finishBackCrop}
+              onSkip={() => finishBackCrop(pendingBackRaw)}
+            />
+          )}
+
+          {!backImageDataUrl && !pendingBackRaw && (
             <button
               className="btn btn-ghost"
               onClick={() => backInputRef.current?.click()}
@@ -226,7 +258,7 @@ export default function CardCapture({ onSave }) {
             </button>
           )}
 
-          {backImageDataUrl && (
+          {backImageDataUrl && !pendingBackRaw && (
             <div style={{ marginBottom: 10 }}>
               <div className="capture-preview">
                 <img src={backImageDataUrl} alt="Captured card back" />
@@ -235,13 +267,13 @@ export default function CardCapture({ onSave }) {
             </div>
           )}
 
-          <button className="btn btn-brass" onClick={handleIdentify} disabled={loading} style={{ marginBottom: 10 }}>
+          <button className="btn btn-brass" onClick={handleIdentify} disabled={loading || !!pendingBackRaw} style={{ marginBottom: 10 }}>
             {loading ? 'Reading the card…' : 'Identify card & get value'}
           </button>
         </>
       )}
 
-      {imageDataUrl && (
+      {(imageDataUrl || pendingFrontRaw) && (
         <button className="btn btn-ghost" onClick={reset} style={{ marginBottom: 16 }}>
           Retake photo
         </button>
