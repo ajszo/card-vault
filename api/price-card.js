@@ -68,7 +68,7 @@ export default async function handler(req, res) {
       apiKey,
       model: 'claude-opus-4-8',
       system: SYSTEM_PROMPT,
-      maxTokens: 3000,
+      maxTokens: 5000,
       content: [{ type: 'text', text: `Find recent sold comps for this card: ${description}` }]
     });
 

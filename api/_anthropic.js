@@ -22,8 +22,8 @@ export async function callClaudeJson({ apiKey, model, system, content, maxTokens
       max_tokens: maxTokens,
       system,
       tools: [
-        { type: 'web_search_20260209', name: 'web_search' },
-        { type: 'web_fetch_20260209', name: 'web_fetch', max_uses: 8, max_content_tokens: 6000 }
+        { type: 'web_search_20260209', name: 'web_search', max_uses: 15 },
+        { type: 'web_fetch_20260209', name: 'web_fetch', max_uses: 15, max_content_tokens: 3000 }
       ],
       messages: [{ role: 'user', content }]
     })
