@@ -3,12 +3,14 @@ import { identifyCard, priceCard } from '../api.js';
 import { fileToBase64, resizeImage, SPORTS } from '../utils.js';
 import { newId } from '../db.js';
 import CompsList from './CompsList.jsx';
+import ScarcityMeter from './ScarcityMeter.jsx';
 
 const BLANK_FORM = {
   player: '', year: '', set: '', parallel: '', cardNumber: '',
   sport: 'Baseball', gradingCompany: '', grade: '',
   estimatedValue: '', purchasePrice: '', purchaseDate: '', purchaseSource: 'eBay',
-  confidence: null, notes: '', comps: [], priceNotes: ''
+  confidence: null, notes: '', comps: [], priceNotes: '',
+  popCount: null, sales12mo: null, scarcityIndex: null
 };
 
 export default function CardCapture({ onSave }) {
@@ -103,7 +105,10 @@ export default function CardCapture({ onSave }) {
         ...f,
         estimatedValue: priceResult.estimatedValue ?? '',
         comps: priceResult.comps || [],
-        priceNotes: priceResult.notes || ''
+        priceNotes: priceResult.notes || '',
+        popCount: priceResult.popCount ?? null,
+        sales12mo: priceResult.sales12mo ?? null,
+        scarcityIndex: priceResult.scarcityIndex ?? null
       }));
     } catch (err) {
       setPriceError(err.message || 'Could not look up recent sales. You can still enter a value manually.');
@@ -150,6 +155,9 @@ export default function CardCapture({ onSave }) {
       valueUpdatedAt: form.comps.length ? Date.now() : null,
       priceComps: form.comps,
       priceNotes: form.priceNotes,
+      popCount: form.popCount,
+      sales12mo: form.sales12mo,
+      scarcityIndex: form.scarcityIndex,
       purchasePrice: form.purchasePrice ? Number(form.purchasePrice) : null,
       purchaseDate: form.purchaseDate ? new Date(form.purchaseDate).getTime() : Date.now(),
       purchaseSource: form.purchaseSource,
@@ -297,6 +305,9 @@ export default function CardCapture({ onSave }) {
             <input type="number" value={form.estimatedValue} onChange={(e) => update('estimatedValue', e.target.value)} />
           </div>
           {form.priceNotes && <p style={{ fontSize: 12.5, color: 'var(--ink-dim)', marginTop: -4 }}>{form.priceNotes}</p>}
+          {form.gradingCompany && (
+            <ScarcityMeter index={form.scarcityIndex} popCount={form.popCount} sales12mo={form.sales12mo} compact />
+          )}
           <CompsList comps={form.comps} />
           <div style={{ display: 'flex', gap: 10 }}>
             <div className="field-group" style={{ flex: 1 }}>

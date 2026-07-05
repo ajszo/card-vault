@@ -1,5 +1,5 @@
 import React from 'react';
-import { money, stripeVar } from '../utils.js';
+import { money, stripeVar, scarcityTier } from '../utils.js';
 
 export function StatsBar({ cards }) {
   const owned = cards.filter((c) => c.status === 'owned');
@@ -38,6 +38,11 @@ function CardTile({ card, onOpen }) {
         <div className="player">{card.player || 'Unnamed card'}</div>
         <div className="meta">{[card.year, card.set].filter(Boolean).join(' · ') || '—'}</div>
         <div className="value">{money(card.estimatedValue)}</div>
+        {card.gradingCompany && card.scarcityIndex !== null && card.scarcityIndex !== undefined && (
+          <div style={{ fontSize: 10, marginTop: 3, color: scarcityTier(card.scarcityIndex).color }}>
+            {card.scarcityIndex.toFixed(1)}% {scarcityTier(card.scarcityIndex).icon}
+          </div>
+        )}
       </div>
     </div>
   );

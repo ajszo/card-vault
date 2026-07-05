@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { money, dateStr } from '../utils.js';
 import { priceCard } from '../api.js';
 import CompsList from './CompsList.jsx';
+import ScarcityMeter from './ScarcityMeter.jsx';
 
 export default function CardDetail({ card, onClose, onSave, onDelete }) {
   const [sellMode, setSellMode] = useState(false);
@@ -23,6 +24,9 @@ export default function CardDetail({ card, onClose, onSave, onDelete }) {
         estimatedValue: priceResult.estimatedValue ?? card.estimatedValue,
         priceComps: priceResult.comps || [],
         priceNotes: priceResult.notes || '',
+        popCount: priceResult.popCount ?? null,
+        sales12mo: priceResult.sales12mo ?? null,
+        scarcityIndex: priceResult.scarcityIndex ?? null,
         valueUpdatedAt: (priceResult.comps || []).length ? Date.now() : card.valueUpdatedAt
       });
     } catch (err) {
@@ -80,6 +84,9 @@ export default function CardDetail({ card, onClose, onSave, onDelete }) {
         </button>
         {refreshError && <p style={{ color: 'var(--danger)', fontSize: 13 }}>{refreshError}</p>}
         {card.priceNotes && <p style={{ fontSize: 12.5, color: 'var(--ink-dim)', marginTop: -4 }}>{card.priceNotes}</p>}
+        {card.gradingCompany && (
+          <ScarcityMeter index={card.scarcityIndex} popCount={card.popCount} sales12mo={card.sales12mo} />
+        )}
         <CompsList comps={card.priceComps} />
 
         <div className="divider" />

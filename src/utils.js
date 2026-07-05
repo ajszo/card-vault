@@ -22,6 +22,26 @@ export function dateStr(ts) {
   return new Date(ts).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
+// Scarcity Index = 12-month sales / population count, as a percentage.
+// Lower % = fewer copies trade relative to how many exist = scarcer.
+// Colors are fixed (not per-theme) since these are status indicators, same
+// treatment as the confidence-flag tiers.
+export function scarcityTier(index) {
+  if (index === null || index === undefined) {
+    return { label: 'Ungraded', icon: '📦', color: 'var(--ink-dim)' };
+  }
+  if (index < 3) return { label: 'Very scarce', icon: '🏔️', color: 'var(--danger)' };
+  if (index < 6) return { label: 'Scarce', icon: '🌶️', color: '#C2793D' };
+  if (index < 10) return { label: 'Moderate', icon: '⚖️', color: 'var(--brass)' };
+  if (index < 20) return { label: 'Active market', icon: '🔄', color: '#7FA37A' };
+  return { label: 'High demand', icon: '🚀', color: '#4F8F5B' };
+}
+
+export function scarcityBarWidth(index) {
+  if (index === null || index === undefined) return 5;
+  return Math.min(100, Math.round(5 + (index / 28) * 80));
+}
+
 export function fileToBase64(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
